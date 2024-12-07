@@ -67,12 +67,15 @@ def run_tree(root, world_state, max_num_runs=1):
     py_trees.display.render_dot_tree(root, with_blackboard_variables=True)
 
     root.setup_with_descendants()
-    for i in range(1,2):
+    while True:
         try:
-            print("\n-------- Tick {0} ------------ \n".format(i))
+            print("\n-------- Tick ------------ \n")
             root.tick_once()
             print("\n")
             print(py_trees.display.unicode_tree(root, show_status=True))
+            if root.status == py_trees.common.Status.SUCCESS:
+                print("Task completed successfully!")
+                break
             time.sleep(1)
         except KeyboardInterrupt:
             break
