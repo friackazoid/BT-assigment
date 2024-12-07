@@ -78,7 +78,8 @@ class MockManipulator:
 
     @property
     def name(self):
-        return self._name
+        # return self._name
+        return "MyMockManipulator"
 
     @property
     def gripper_closed(self):
