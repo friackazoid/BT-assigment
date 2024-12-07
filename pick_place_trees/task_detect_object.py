@@ -5,11 +5,12 @@ class DetectObject(py_trees.behaviour.Behaviour):
         super(DetectObject, self).__init__(name=name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
 
+        self.key_object_pose = "object_pose"
         self.object_detector = object_detector
         self.object_position = None
         self._object_detected = False
         self.blackboard = self.attach_blackboard_client(name=self.__class__.__name__)
-        self.blackboard.register_key(key="object_pose", access=py_trees.common.Access.WRITE)
+        self.blackboard.register_key(key=self.key_object_pose, access=py_trees.common.Access.WRITE)
 
 
     def update(self) -> py_trees.common.Status:
