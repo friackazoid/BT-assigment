@@ -21,20 +21,28 @@ def main(object_detect_success=0.8, move_success=0.9,
     """
     # Set up the mock objects and world state
     manipulator_state = MockManipulatorState(name="MyManipulator", grasp_offset_z=0.1)
+    print("Manipulator state: ", manipulator_state.__dict__)
+
     world_state = WorldState(
         manipulator_state=manipulator_state,
         object_slip_probability=slip_probability,
         object_position=(1, 2, 3))
+
+
     manipulator = MockManipulator(
         state=manipulator_state,
         world_state=world_state,
         grasp_success_rate=grasp_success,
         move_success_rate=move_success)
+
     object_detector = MockObjectDetector(world_state=world_state, detection_success=object_detect_success)
+
     force_sensor = MockForceFeedbackSensor(
         manipulator_state=manipulator_state,
         world_state=world_state,
         detection_success=force_detect_success)
+
+    print("World state: ", world_state)
 
     # Create and run the behavior tree
     root = create_pickup_tree(manipulator, object_detector, force_sensor)
