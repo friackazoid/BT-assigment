@@ -6,6 +6,7 @@ from .world_state import WorldState
 
 from .task_detect_object import DetectObject
 from .task_move_to_position import MoveToPosition
+from .task_grasp_object import GraspObject
 
 import py_trees
 
@@ -36,8 +37,9 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
     
     detect_object = DetectObject(name="Detect object", object_detector=object_detector)
     move_to_object = MoveToPosition(name="Move to object", manipulator=manipulator)
+    grasp_object = GraspObject(name="Grasp object", manipulator=manipulator, force_sensor=force_sensor)
    
-    pick_sequence = py_trees.composites.Sequence(name="Pick sequence", memory=False, children=[detect_object, move_to_object])
+    pick_sequence = py_trees.composites.Sequence(name="Pick sequence", memory=False, children=[detect_object, move_to_object, grasp_object])
 
     root = py_trees.composites.Sequence(name="Pick and place", memory=False)
     root.add_children([pick_sequence])
@@ -58,7 +60,7 @@ def run_tree(root, world_state, max_num_runs=1):
     py_trees.display.render_dot_tree(root, with_blackboard_variables=True)
 
     root.setup_with_descendants()
-    for i in range(1,6):
+    for i in range(1,2):
         try:
             print("\n-------- Tick {0} ------------ \n".format(i))
             root.tick_once()
