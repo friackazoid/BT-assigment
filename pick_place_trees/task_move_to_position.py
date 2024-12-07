@@ -1,22 +1,31 @@
 import py_trees
 
 class CalculateManipulatorPosition(py_trees.behaviour.Behaviour):
-    def __init__(self, name="Calculate Pick Position", manipulator = None, key_object_position: str = ""):
+    def __init__(self, name="Calculate Pick Position", manipulator = None, key_object_position: str = "", object_position: tuple[float, float, float] = None):
         super(CalculateManipulatorPosition, self).__init__(name=name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
-        self.key_object_position = key_object_position
+
         self.key_manipulator_target_position = "manipulator_target"
+        self.key_object_position = key_object_position
+        self.object_position = object_position
         self.manipulator = manipulator
 
         self.blackboard = self.attach_blackboard_client(name=self.__class__.__name__)
         self.blackboard.register_key(key=self.key_manipulator_target_position, access=py_trees.common.Access.WRITE)
-        self.blackboard.register_key(key=self.key_object_position, access=py_trees.common.Access.READ)
+        if self.key_object_position != "":
+            self.blackboard.register_key(key=self.key_object_position, access=py_trees.common.Access.READ)
 
     def update(self) -> py_trees.common.Status:
         """
         Calculates the target pick position for the manipulator.
         """
-        object_position = getattr(self.blackboard, self.key_object_position, None)
+
+        object_position = None
+        if self.object_position is not None:
+            object_position = self.object_position
+        else:
+            object_position = getattr(self.blackboard, self.key_object_position, None)
+        
         position = self.manipulator.get_grasp_position_for(object_position)
         setattr(self.blackboard, self.key_manipulator_target_position, position)
 
