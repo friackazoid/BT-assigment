@@ -3,6 +3,8 @@ from .mock_object_detector import MockObjectDetector
 from .mock_force_feedback_sensor import MockForceFeedbackSensor
 from .world_state import WorldState
 
+from .task_detect_object import DetectObject
+
 import py_trees
 
 def create_pickup_tree(manipulator, object_detector, force_sensor,
@@ -27,7 +29,10 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
 
     # TODO: add your code here
 
-    root = py_trees.composites.Sequence(name="Pick and place", memory=True)
+
+    detect_object = DetectObject(name="Detect object", object_detector=object_detector)
+
+    root = py_trees.composites.Sequence(name="Pick and place", memory=True, children=[detect_object])
     return root
 
 def run_tree(root, world_state, max_num_runs=1):
