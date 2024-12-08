@@ -6,7 +6,7 @@ from .world_state import WorldState
 
 from .task_detect_object import DetectObject
 from .task_move_to_position import MoveToPosition, CalculateManipulatorPosition
-from .task_grasp_object import GripperClose, GripperOpen, GripperIsClosed
+from .task_gripper import GripperClose, GripperOpen, GripperIsClosed
 
 import py_trees
 from py_trees.decorators import Retry, RunningIsFailure, SuccessIsFailure
