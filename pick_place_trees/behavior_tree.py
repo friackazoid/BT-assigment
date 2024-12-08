@@ -6,7 +6,7 @@ from .world_state import WorldState
 
 from .task_detect_object import DetectObject
 from .task_move_to_position import MoveToPosition, CalculateManipulatorPosition
-from .task_grasp_object import GraspObject, ReleaseObject, IsGrasped
+from .task_grasp_object import GripperClose, GripperOpen, GripperIsClosed
 
 import py_trees
 from py_trees.decorators import Retry, RunningIsFailure, SuccessIsFailure
@@ -42,17 +42,17 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
     calculate_pick_position = CalculateManipulatorPosition(name="Calculate pick position", manipulator=manipulator, key_object_position=detect_object.key_object_pose)
     move_to_grasp = Retry(name="Retry move to grasp", child=MoveToPosition(name="Move to grasp", manipulator=manipulator, key_target_pose=calculate_pick_position.key_manipulator_target_position), num_failures=10)
 
-    grasp_object = GraspObject(name="Grasp object", manipulator=manipulator, force_sensor=force_sensor)
-    recovery_failed_grasp = SuccessIsFailure(name="Recovery is error for sequence", child=Retry(name="Retry recovery grasp", child=ReleaseObject(name="Recovery grasp", manipulator=manipulator, force_sensor=force_sensor), num_failures=10))
+    grasp_object = GripperClose(name="Grasp object", manipulator=manipulator, force_sensor=force_sensor)
+    recovery_failed_grasp = SuccessIsFailure(name="Recovery is error for sequence", child=Retry(name="Retry recovery grasp", child=GripperOpen(name="Recovery grasp", manipulator=manipulator, force_sensor=force_sensor), num_failures=10))
     grasp_and_recovery = py_trees.composites.Selector(name="Grasp and recovery", memory=False, children=[grasp_object, recovery_failed_grasp])
    
     calculate_place_position = CalculateManipulatorPosition(name="Calculate place position", manipulator=manipulator, object_position=object_target_position)
     move_to_place = MoveToPosition(name="Move to place", manipulator=manipulator, key_target_pose=calculate_place_position.key_manipulator_target_position)
-    monitor_object = IsGrasped(name="Monitor object", force_sensor=force_sensor)
+    monitor_object = GripperIsClosed(name="Monitor object", force_sensor=force_sensor)
 
     move_to_place_with_monitor = py_trees.composites.Parallel(name="Move to place with monitor", policy=py_trees.common.ParallelPolicy.SuccessOnAll(synchronise=True), children=[move_to_place, monitor_object])
 
-    release_object = Retry(name="Retry release object", child=ReleaseObject(name="Release object", manipulator=manipulator, force_sensor=force_sensor), num_failures=10)
+    release_object = Retry(name="Retry release object", child=GripperOpen(name="Release object", manipulator=manipulator, force_sensor=force_sensor), num_failures=10)
     move_home = Retry(name="Retry move to home", child=MoveToPosition(name="Move home", manipulator=manipulator, target_position=manipulator_end_position), num_failures=10)
 
 

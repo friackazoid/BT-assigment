@@ -3,9 +3,9 @@ import py_trees
 from pick_place_trees.mock_force_feedback_sensor import MockForceFeedbackSensor
 from pick_place_trees.mock_manipulator import MockManipulator
 
-class ReleaseObject(py_trees.behaviour.Behaviour):
-    def __init__(self, name="Release Object", manipulator: MockManipulator = None, force_sensor: MockForceFeedbackSensor = None):
-        super(ReleaseObject, self).__init__(name=name)
+class GripperOpen(py_trees.behaviour.Behaviour):
+    def __init__(self, name="Gripper open", manipulator: MockManipulator = None, force_sensor: MockForceFeedbackSensor = None):
+        super(GripperOpen, self).__init__(name=name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
 
         self.manipulator = manipulator
@@ -24,9 +24,9 @@ class ReleaseObject(py_trees.behaviour.Behaviour):
         return py_trees.common.Status.FAILURE
 
 
-class GraspObject(py_trees.behaviour.Behaviour):
-    def __init__(self, name="Grasp Object", manipulator: MockManipulator = None, force_sensor: MockForceFeedbackSensor = None):
-        super(GraspObject, self).__init__(name=name)
+class GripperClose(py_trees.behaviour.Behaviour):
+    def __init__(self, name="Gripper close", manipulator: MockManipulator = None, force_sensor: MockForceFeedbackSensor = None):
+        super(GripperClose, self).__init__(name=name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
 
         self.manipulator = manipulator
@@ -44,15 +44,12 @@ class GraspObject(py_trees.behaviour.Behaviour):
                 return py_trees.common.Status.SUCCESS
             
         self.logger.info("Failed to grasp object.")
-        #if self.manipulator.release():
-        #    self.logger.info("Open gripper.")
-
         return py_trees.common.Status.FAILURE
 
 
-class IsGrasped(py_trees.behaviour.Behaviour):
-    def __init__(self, name="Is Grasped", force_sensor: MockForceFeedbackSensor = None):
-        super(IsGrasped, self).__init__(name=name)
+class GripperIsClosed(py_trees.behaviour.Behaviour):
+    def __init__(self, name="Gripper is closed", force_sensor: MockForceFeedbackSensor = None):
+        super(GripperIsClosed, self).__init__(name=name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
 
         self.force_sensor = force_sensor
