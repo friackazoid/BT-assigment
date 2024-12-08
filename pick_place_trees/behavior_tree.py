@@ -6,9 +6,10 @@ from .world_state import WorldState
 
 from .task_detect_object import DetectObject
 from .task_move_to_position import MoveToPosition, CalculateManipulatorPosition
-from .task_grasp_object import GraspObject, ReleaseObject
+from .task_grasp_object import GripperClose, GripperOpen, GripperIsClosed
 
 import py_trees
+from py_trees.decorators import Retry, RunningIsFailure, SuccessIsFailure
 
 import time
 
@@ -35,18 +36,38 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
     py_trees.logging.level = py_trees.logging.Level.DEBUG
     py_trees.blackboard.Blackboard.enable_activity_stream(maximum_size=100)
     
-    detect_object = DetectObject(name="Detect object", object_detector=object_detector)
+    detect_object =  DetectObject(name="Detect object", object_detector=object_detector)
+    retry_detect_object = Retry(name="Retry Detect Object", child=detect_object, num_failures=10)
+
     calculate_pick_position = CalculateManipulatorPosition(name="Calculate pick position", manipulator=manipulator, key_object_position=detect_object.key_object_pose)
-    move_to_object = MoveToPosition(name="Move to object", manipulator=manipulator, key_target_pose=calculate_pick_position.key_manipulator_target_position)
-    grasp_object = GraspObject(name="Grasp object", manipulator=manipulator, force_sensor=force_sensor)
+    move_to_grasp = Retry(name="Retry move to grasp", child=MoveToPosition(name="Move to grasp", manipulator=manipulator, key_target_pose=calculate_pick_position.key_manipulator_target_position), num_failures=10)
+
+    grasp_object = GripperClose(name="Grasp object", manipulator=manipulator, force_sensor=force_sensor)
+    recovery_failed_grasp = SuccessIsFailure(name="Recovery is error for sequence", child=Retry(name="Retry recovery grasp", child=GripperOpen(name="Recovery grasp", manipulator=manipulator, force_sensor=force_sensor), num_failures=10))
+    grasp_and_recovery = py_trees.composites.Selector(name="Grasp and recovery", memory=False, children=[grasp_object, recovery_failed_grasp])
    
     calculate_place_position = CalculateManipulatorPosition(name="Calculate place position", manipulator=manipulator, object_position=object_target_position)
     move_to_place = MoveToPosition(name="Move to place", manipulator=manipulator, key_target_pose=calculate_place_position.key_manipulator_target_position)
-    release_object = ReleaseObject(name="Release object", manipulator=manipulator)
-    move_home = MoveToPosition(name="Move home", manipulator=manipulator, target_position=manipulator_end_position)
+    monitor_object = GripperIsClosed(name="Monitor object", force_sensor=force_sensor)
 
-    pick_sequence = py_trees.composites.Sequence(name="Pick sequence", memory=False, children=[detect_object, calculate_pick_position, move_to_object, grasp_object])
-    place_sequence = py_trees.composites.Sequence(name="Place sequence", memory=False, children=[calculate_place_position, move_to_place, release_object, move_home])
+    move_to_place_with_monitor = py_trees.composites.Parallel(name="Move to place with monitor", policy=py_trees.common.ParallelPolicy.SuccessOnAll(synchronise=True), children=[move_to_place, monitor_object])
+
+    release_object = Retry(name="Retry release object", child=GripperOpen(name="Release object", manipulator=manipulator, force_sensor=force_sensor), num_failures=10)
+    move_home = Retry(name="Retry move to home", child=MoveToPosition(name="Move home", manipulator=manipulator, target_position=manipulator_end_position), num_failures=10)
+
+
+    pick_sequence = py_trees.composites.Sequence(name="Pick sequence", memory=False, children=[
+        retry_detect_object,
+        calculate_pick_position,
+        move_to_grasp,
+        grasp_and_recovery
+    ])
+    place_sequence = py_trees.composites.Sequence(name="Place sequence", memory=False, children=[
+        calculate_place_position,
+        move_to_place_with_monitor,
+        release_object,
+        move_home
+    ])
 
     root = py_trees.composites.Sequence(name="Pick and place", memory=False)
     root.add_children([pick_sequence, place_sequence])
@@ -69,15 +90,17 @@ def run_tree(root, world_state, max_num_runs=1):
     root.setup_with_descendants()
     while True:
         try:
-            print("\n-------- Tick ------------ \n")
+            print(f"\n-------- Tick {max_num_runs}------------ \n")
             root.tick_once()
-            print("\n")
             print(py_trees.display.unicode_tree(root, show_status=True))
+            print(f"World state: {world_state}")
             if root.status == py_trees.common.Status.SUCCESS:
                 print("Task completed successfully!")
                 break
             time.sleep(1)
+            max_num_runs -= 1
         except KeyboardInterrupt:
+            root.interrupt()
             break
 
 

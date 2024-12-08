@@ -1,7 +1,9 @@
 import py_trees
 
+from pick_place_trees.mock_manipulator import MockManipulator
+
 class CalculateManipulatorPosition(py_trees.behaviour.Behaviour):
-    def __init__(self, name="Calculate Pick Position", manipulator = None, key_object_position: str = "", object_position: tuple[float, float, float] = None):
+    def __init__(self, name="Calculate Pick Position", manipulator: MockManipulator = None, key_object_position: str = "", object_position: tuple[float, float, float] = None):
         super(CalculateManipulatorPosition, self).__init__(name=name)
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
 
@@ -34,7 +36,7 @@ class CalculateManipulatorPosition(py_trees.behaviour.Behaviour):
 
 
 class MoveToPosition(py_trees.behaviour.Behaviour):
-    def __init__(self, name="Move to Position", manipulator=None, key_target_pose: str = "", target_position: tuple[float, float, float] = None):
+    def __init__(self, name="Move to Position", manipulator: MockManipulator = None, key_target_pose: str = "", target_position: tuple[float, float, float] = None):
         super(MoveToPosition, self).__init__(name=name)
         
         self.logger.debug("%s.__init__()" % (self.__class__.__name__))
