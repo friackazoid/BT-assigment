@@ -48,3 +48,22 @@ class GraspObject(py_trees.behaviour.Behaviour):
         #    self.logger.info("Open gripper.")
 
         return py_trees.common.Status.FAILURE
+
+
+class IsGrasped(py_trees.behaviour.Behaviour):
+    def __init__(self, name="Is Grasped", force_sensor: MockForceFeedbackSensor = None):
+        super(IsGrasped, self).__init__(name=name)
+        self.logger.debug("%s.__init__()" % (self.__class__.__name__))
+
+        self.force_sensor = force_sensor
+
+    def update(self) -> py_trees.common.Status:
+        """
+        Checks if an object is grasped by the manipulator.
+        """
+        if self.force_sensor.detect_force():
+            self.logger.info("Object is grasped.")
+            return py_trees.common.Status.SUCCESS
+
+        self.logger.info("Object is not grasped.")
+        return py_trees.common.Status.FAILURE

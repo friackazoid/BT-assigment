@@ -6,7 +6,7 @@ from .world_state import WorldState
 
 from .task_detect_object import DetectObject
 from .task_move_to_position import MoveToPosition, CalculateManipulatorPosition
-from .task_grasp_object import GraspObject, ReleaseObject
+from .task_grasp_object import GraspObject, ReleaseObject, IsGrasped
 
 import py_trees
 from py_trees.decorators import Retry, RunningIsFailure, SuccessIsFailure
@@ -47,9 +47,14 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
     grasp_and_recovery = Retry(name="Rety Grasp", child=py_trees.composites.Selector(name="Grasp and recovery", memory=False, children=[grasp_object, recovery_failed_grasp]), num_failures=10)
    
     calculate_place_position = CalculateManipulatorPosition(name="Calculate place position", manipulator=manipulator, object_position=object_target_position)
-    move_to_place = Retry(name="Retry move to place", child=MoveToPosition(name="Move to place", manipulator=manipulator, key_target_pose=calculate_place_position.key_manipulator_target_position), num_failures=10)
+    move_to_place = MoveToPosition(name="Move to place", manipulator=manipulator, key_target_pose=calculate_place_position.key_manipulator_target_position)
+    monitor_object = IsGrasped(name="Monitor object", force_sensor=force_sensor)
+
+    move_to_place_with_monitor = py_trees.composites.Parallel(name="Move to place with monitor", policy=py_trees.common.ParallelPolicy.SuccessOnAll(synchronise=True), children=[move_to_place, monitor_object])
+
     release_object = Retry(name="Retry release object", child=ReleaseObject(name="Release object", manipulator=manipulator, force_sensor=force_sensor), num_failures=10)
     move_home = Retry(name="Retry move to home", child=MoveToPosition(name="Move home", manipulator=manipulator, target_position=manipulator_end_position), num_failures=10)
+
 
     pick_sequence = py_trees.composites.Sequence(name="Pick sequence", memory=False, children=[
         retry_detect_object,
@@ -57,7 +62,12 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
         move_to_grasp,
         grasp_and_recovery
     ])
-    place_sequence = py_trees.composites.Sequence(name="Place sequence", memory=False, children=[calculate_place_position, move_to_place, release_object, move_home])
+    place_sequence = py_trees.composites.Sequence(name="Place sequence", memory=False, children=[
+        calculate_place_position,
+        move_to_place_with_monitor,
+        release_object,
+        move_home
+    ])
 
     root = py_trees.composites.Sequence(name="Pick and place", memory=False)
     root.add_children([pick_sequence, place_sequence])
@@ -83,6 +93,7 @@ def run_tree(root, world_state, max_num_runs=1):
             print(f"\n-------- Tick {max_num_runs}------------ \n")
             root.tick_once()
             print(py_trees.display.unicode_tree(root, show_status=True))
+            print(f"World state: {world_state}")
             if root.status == py_trees.common.Status.SUCCESS:
                 print("Task completed successfully!")
                 break
