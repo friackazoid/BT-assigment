@@ -96,7 +96,7 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
                               move_to_grasp,
                               grasp_and_recovery
                               ]), 
-                          num_failures=10)
+                          num_failures=100)
     place_sequence = py_trees.composites.Sequence(name="Place sequence", memory=False, children=[
         calculate_place_position,
         move_to_place_with_monitor,
