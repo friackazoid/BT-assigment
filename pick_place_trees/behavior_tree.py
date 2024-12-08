@@ -82,7 +82,6 @@ def run_tree(root, world_state, max_num_runs=1):
         try:
             print(f"\n-------- Tick {max_num_runs}------------ \n")
             root.tick_once()
-            print("\n")
             print(py_trees.display.unicode_tree(root, show_status=True))
             if root.status == py_trees.common.Status.SUCCESS:
                 print("Task completed successfully!")
@@ -90,6 +89,7 @@ def run_tree(root, world_state, max_num_runs=1):
             time.sleep(1)
             max_num_runs -= 1
         except KeyboardInterrupt:
+            root.interrupt()
             break
 
 
