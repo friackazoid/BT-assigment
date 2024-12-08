@@ -128,6 +128,11 @@ class WorldState:
                 )
                 self._holding_object = True
 
+        if not is_gripped:
+            # Gripper is open, reset slip simulation
+            self._simulate_object_slip = False
+            print("Reset slip simulation (gripper open)")
+
     def is_object_within_grasp_offset(self) -> bool:
         """
         Checks if the object is within grasp offset by calling the manipulator's function.

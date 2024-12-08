@@ -53,8 +53,9 @@ class MockManipulatorState:
         grasp_position = self.get_grasp_position_for(object_position)
         if self.endeffector_position is None:
             return False
+
         distance = math.dist(self.endeffector_position, grasp_position)
-        return distance <= self._grasp_tolerance
+        return distance < self._grasp_tolerance
 
 
 class MockManipulator:
