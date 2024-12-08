@@ -38,10 +38,6 @@ class GraspObject(py_trees.behaviour.Behaviour):
         Grasps an object in the environment.
         """
 
-        if self.manipulator.gripper_closed:
-            self.logger.info("Gripper is already closed.")
-            self.manipulator.release()
-
         if self.manipulator.grasp():
             self.logger.info("Attempting to grasp object.")
             if self.force_sensor.detect_force():
@@ -49,4 +45,7 @@ class GraspObject(py_trees.behaviour.Behaviour):
                 return py_trees.common.Status.SUCCESS
             
         self.logger.info("Failed to grasp object.")
+        if self.manipulator.release():
+            self.logger.info("Open gripper.")
+
         return py_trees.common.Status.FAILURE
