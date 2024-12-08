@@ -24,5 +24,5 @@ class DetectObject(py_trees.behaviour.Behaviour):
             return py_trees.common.Status.SUCCESS
 
         self.blackboard.object_pose = None
-        self.logger.info("No object detected.")
+        self.logger.warning("No object detected.")
         return py_trees.common.Status.FAILURE
