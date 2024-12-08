@@ -1,4 +1,5 @@
 import argparse
+import py_trees
 
 from pick_place_trees.mock_manipulator import MockManipulator, MockManipulatorState
 from pick_place_trees.mock_object_detector import MockObjectDetector
@@ -8,7 +9,7 @@ from pick_place_trees.world_state import WorldState
 from pick_place_trees.behavior_tree import create_pickup_tree, run_tree
 
 def main(object_detect_success=0.8, move_success=0.9,
-         grasp_success=0.9, slip_probability=0.3, force_detect_success=0.9):
+         grasp_success=0.9, slip_probability=0.3, force_detect_success=0.9, render_dot_tree=True):
     """
     Sets up and runs the single-arm pickup behavior tree with the mock manipulator and object detector.
 
@@ -21,7 +22,6 @@ def main(object_detect_success=0.8, move_success=0.9,
     """
     # Set up the mock objects and world state
     manipulator_state = MockManipulatorState(name="MyManipulator", grasp_offset_z=0.1)
-    print("Manipulator state: ", manipulator_state.__dict__)
 
     world_state = WorldState(
         manipulator_state=manipulator_state,
@@ -42,10 +42,12 @@ def main(object_detect_success=0.8, move_success=0.9,
         world_state=world_state,
         detection_success=force_detect_success)
 
-    print("World state: ", world_state)
-
     # Create and run the behavior tree
     root = create_pickup_tree(manipulator, object_detector, force_sensor)
+    
+    if render_dot_tree:
+        py_trees.display.render_dot_tree(root, with_blackboard_variables=True)
+    
     run_tree(root, world_state)
 
 if __name__ == '__main__':
@@ -61,6 +63,7 @@ if __name__ == '__main__':
                         help="Probability for object to slip from gripper, [0.0..1.0]")
     parser.add_argument('--force-detect', type=float, default=0.8,
                         help="Force-feedback detection success probability, [0.0..1.0]")
+    parser.add_argument('--render_dot_tree', type=bool, default=True, help="Render the tree as a dot file")
     args = parser.parse_args()
 
     # Run the behavior tree with the specified parameters
