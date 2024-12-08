@@ -69,6 +69,7 @@ class TestWorldState(unittest.TestCase):
         self.manipulator_state.gripper_closed = True 
         self.world_state.update_holding_object()
         self.assertTrue(self.world_state.holding_object)
+        self.assertFalse(self.world_state._simulate_object_slip)
 
     def test_holding_object_pose_update(self):
         """Test that after holding the object and moving the end effector, the position is updated correctly."""
