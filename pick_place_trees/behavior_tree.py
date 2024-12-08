@@ -9,6 +9,7 @@ from .task_move_to_position import MoveToPosition, CalculateManipulatorPosition
 from .task_grasp_object import GraspObject, ReleaseObject
 
 import py_trees
+from py_trees.decorators import Retry
 
 import time
 
@@ -35,20 +36,22 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
     py_trees.logging.level = py_trees.logging.Level.DEBUG
     py_trees.blackboard.Blackboard.enable_activity_stream(maximum_size=100)
     
-    detect_object = DetectObject(name="Detect object", object_detector=object_detector)
+    detect_object =  DetectObject(name="Detect object", object_detector=object_detector)
+    retry_detect_object = Retry(name="Retry Detect Object", child=detect_object, num_failures=10)
+
     calculate_pick_position = CalculateManipulatorPosition(name="Calculate pick position", manipulator=manipulator, key_object_position=detect_object.key_object_pose)
-    move_to_pregrasp = MoveToPosition(name="Move to pregrasp", manipulator=manipulator, key_target_pose=calculate_pick_position.key_manipulator_target_position)
+    move_to_grasp = Retry(name="Retry move to grasp", child=MoveToPosition(name="Move to grasp", manipulator=manipulator, key_target_pose=calculate_pick_position.key_manipulator_target_position), num_failures=10)
     grasp_object = GraspObject(name="Grasp object", manipulator=manipulator, force_sensor=force_sensor)
    
     calculate_place_position = CalculateManipulatorPosition(name="Calculate place position", manipulator=manipulator, object_position=object_target_position)
-    move_to_place = MoveToPosition(name="Move to place", manipulator=manipulator, key_target_pose=calculate_place_position.key_manipulator_target_position)
+    move_to_place = Retry(name="Retry move to place", child=MoveToPosition(name="Move to place", manipulator=manipulator, key_target_pose=calculate_place_position.key_manipulator_target_position), num_failures=10)
     release_object = ReleaseObject(name="Release object", manipulator=manipulator, force_sensor=force_sensor)
-    move_home = MoveToPosition(name="Move home", manipulator=manipulator, target_position=manipulator_end_position)
+    move_home = Retry(name="Retry move to home", child=MoveToPosition(name="Move home", manipulator=manipulator, target_position=manipulator_end_position), num_failures=10)
 
     pick_sequence = py_trees.composites.Sequence(name="Pick sequence", memory=False, children=[
-        detect_object,
+        retry_detect_object,
         calculate_pick_position,
-        move_to_pregrasp,
+        move_to_grasp,
         grasp_object
     ])
     place_sequence = py_trees.composites.Sequence(name="Place sequence", memory=False, children=[calculate_place_position, move_to_place, release_object, move_home])
