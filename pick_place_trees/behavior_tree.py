@@ -9,7 +9,7 @@ from .task_move_to_position import MoveToPosition, CalculateManipulatorPosition
 from .task_grasp_object import GraspObject, ReleaseObject
 
 import py_trees
-from py_trees.decorators import Retry
+from py_trees.decorators import Retry, RunningIsFailure, SuccessIsFailure
 
 import time
 
@@ -41,7 +41,10 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
 
     calculate_pick_position = CalculateManipulatorPosition(name="Calculate pick position", manipulator=manipulator, key_object_position=detect_object.key_object_pose)
     move_to_grasp = Retry(name="Retry move to grasp", child=MoveToPosition(name="Move to grasp", manipulator=manipulator, key_target_pose=calculate_pick_position.key_manipulator_target_position), num_failures=10)
+
     grasp_object = GraspObject(name="Grasp object", manipulator=manipulator, force_sensor=force_sensor)
+    recovery_failed_grasp = SuccessIsFailure(name="Recovery is error for sequence", child=Retry(name="Retry recovery grasp", child=ReleaseObject(name="Recovery grasp", manipulator=manipulator, force_sensor=force_sensor), num_failures=10))
+    grasp_and_recovery = Retry(name="Rety Grasp", child=py_trees.composites.Selector(name="Grasp and recovery", memory=False, children=[grasp_object, recovery_failed_grasp]), num_failures=10)
    
     calculate_place_position = CalculateManipulatorPosition(name="Calculate place position", manipulator=manipulator, object_position=object_target_position)
     move_to_place = Retry(name="Retry move to place", child=MoveToPosition(name="Move to place", manipulator=manipulator, key_target_pose=calculate_place_position.key_manipulator_target_position), num_failures=10)
@@ -52,7 +55,7 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
         retry_detect_object,
         calculate_pick_position,
         move_to_grasp,
-        grasp_object
+        grasp_and_recovery
     ])
     place_sequence = py_trees.composites.Sequence(name="Place sequence", memory=False, children=[calculate_place_position, move_to_place, release_object, move_home])
 

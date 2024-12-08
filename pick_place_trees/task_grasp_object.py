@@ -17,11 +17,10 @@ class ReleaseObject(py_trees.behaviour.Behaviour):
         """
         if self.manipulator.release():
             if not self.force_sensor.detect_force():
-                self.logger.debug("Object released.")
+                self.logger.info("Object released.")
                 return py_trees.common.Status.SUCCESS
         
-        self._object_released = False
-        self.logger.debug("Failed to release object.")
+        self.logger.info("Failed to release object.")
         return py_trees.common.Status.FAILURE
 
 
@@ -45,7 +44,7 @@ class GraspObject(py_trees.behaviour.Behaviour):
                 return py_trees.common.Status.SUCCESS
             
         self.logger.info("Failed to grasp object.")
-        if self.manipulator.release():
-            self.logger.info("Open gripper.")
+        #if self.manipulator.release():
+        #    self.logger.info("Open gripper.")
 
         return py_trees.common.Status.FAILURE
