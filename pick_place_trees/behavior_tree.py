@@ -45,7 +45,7 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
    
     calculate_place_position = CalculateManipulatorPosition(name="Calculate place position", manipulator=manipulator, object_position=object_target_position)
     move_to_place = Retry(name="Retry move to place", child=MoveToPosition(name="Move to place", manipulator=manipulator, key_target_pose=calculate_place_position.key_manipulator_target_position), num_failures=10)
-    release_object = ReleaseObject(name="Release object", manipulator=manipulator, force_sensor=force_sensor)
+    release_object = Retry(name="Retry release object", child=ReleaseObject(name="Release object", manipulator=manipulator, force_sensor=force_sensor), num_failures=10)
     move_home = Retry(name="Retry move to home", child=MoveToPosition(name="Move home", manipulator=manipulator, target_position=manipulator_end_position), num_failures=10)
 
     pick_sequence = py_trees.composites.Sequence(name="Pick sequence", memory=False, children=[
