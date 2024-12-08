@@ -44,7 +44,7 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
 
     grasp_object = GraspObject(name="Grasp object", manipulator=manipulator, force_sensor=force_sensor)
     recovery_failed_grasp = SuccessIsFailure(name="Recovery is error for sequence", child=Retry(name="Retry recovery grasp", child=ReleaseObject(name="Recovery grasp", manipulator=manipulator, force_sensor=force_sensor), num_failures=10))
-    grasp_and_recovery = Retry(name="Rety Grasp", child=py_trees.composites.Selector(name="Grasp and recovery", memory=False, children=[grasp_object, recovery_failed_grasp]), num_failures=10)
+    grasp_and_recovery = py_trees.composites.Selector(name="Grasp and recovery", memory=False, children=[grasp_object, recovery_failed_grasp])
    
     calculate_place_position = CalculateManipulatorPosition(name="Calculate place position", manipulator=manipulator, object_position=object_target_position)
     move_to_place = MoveToPosition(name="Move to place", manipulator=manipulator, key_target_pose=calculate_place_position.key_manipulator_target_position)
