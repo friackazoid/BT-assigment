@@ -52,7 +52,7 @@ class TestBehaviorTree(unittest.TestCase):
         self.world_state._object_slip_probability = 1.0
         root = create_pickup_tree(self.manipulator, self.object_detector, self.force_sensor,
                                   object_target_position=self.target_object_position)
-        self.assertTrue(run_tree(root, self.world_state))
+        self.assertFalse(run_tree(root, self.world_state))
 
 if __name__ == '__main__':
     unittest.main()
