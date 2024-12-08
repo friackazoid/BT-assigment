@@ -33,36 +33,36 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
         The root of the behavior tree sequence for the pickup task.
     """
 
-    py_trees.logging.level = py_trees.logging.Level.DEBUG
+    # py_trees.logging.level = py_trees.logging.Level.DEBUG
     py_trees.blackboard.Blackboard.enable_activity_stream(maximum_size=100)
     
     detect_object = DetectObject(name="Detect object", object_detector=object_detector)
     retry_detect_object = Retry(name="Retry Detect Object", child=detect_object, num_failures=10)
 
-    calculate_pick_position = ManipulatorCalculatePosition(name="Calculate pick position", manipulator=manipulator, key_object_position=detect_object.key_object_pose)
+    calculate_pick_position = ManipulatorCalculatePosition(name="Calculate Pick Position", manipulator=manipulator, key_object_position=detect_object.key_object_pose)
     move_to_grasp = Retry(
-            name="Retry move to grasp",
+            name="Retry Move To Grasp",
             child=ManipulatorMoveToPosition(
-                name="Move to grasp",
+                name="Move To Grasp",
                 manipulator=manipulator,
                 key_target_pose=calculate_pick_position.key_manipulator_target_position),
             num_failures=10)
 
-    grasp_object = GripperClose(name="Grasp object", manipulator=manipulator, force_sensor=force_sensor)
+    grasp_object = GripperClose(name="Grasp Object", manipulator=manipulator, force_sensor=force_sensor)
     recovery_failed_grasp = SuccessIsFailure(
             name="Recovery is error for sequence",
-            child=Retry(name="Retry recovery grasp",
-                        child=GripperOpen(name="Recovery grasp", manipulator=manipulator, force_sensor=force_sensor),
+            child=Retry(name="Retry Recovery Grasp",
+                        child=GripperOpen(name="Recovery Grasp", manipulator=manipulator, force_sensor=force_sensor),
                         num_failures=10))
-    grasp_and_recovery = py_trees.composites.Selector(name="Grasp and recovery", memory=False, children=[
+    grasp_and_recovery = py_trees.composites.Selector(name="Grasp and Recovery", memory=False, children=[
         grasp_object,
         recovery_failed_grasp
     ])
    
-    calculate_place_position = ManipulatorCalculatePosition(name="Calculate place position", manipulator=manipulator, object_position=object_target_position)
+    calculate_place_position = ManipulatorCalculatePosition(name="Calculate Place Position", manipulator=manipulator, object_position=object_target_position)
     
-    move_to_place = ManipulatorMoveToPosition(name="Move to place", manipulator=manipulator, key_target_pose=calculate_place_position.key_manipulator_target_position)
-    monitor_object = GripperIsClosed(name="Monitor object", force_sensor=force_sensor)
+    move_to_place = ManipulatorMoveToPosition(name="Move To Place", manipulator=manipulator, key_target_pose=calculate_place_position.key_manipulator_target_position)
+    monitor_object = GripperIsClosed(name="Monitor Gripper Closed", force_sensor=force_sensor)
     move_to_place_with_monitor = py_trees.composites.Parallel(
             name="Move to place with monitor",
             policy=py_trees.common.ParallelPolicy.SuccessOnAll(synchronise=True),
@@ -75,7 +75,7 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
     release_object = Retry(
             name="Retry release object",
             child=GripperOpen(
-                name="Release object",
+                name="Release Object",
                 manipulator=manipulator,
                 force_sensor=force_sensor),
             num_failures=10)
@@ -83,18 +83,20 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
     move_home = Retry(
             name="Retry move home",
             child=ManipulatorMoveToPosition(
-                name="Move home",
+                name="Move Home",
                 manipulator=manipulator,
                 target_position=manipulator_end_position),
             num_failures=10)
 
 
-    pick_sequence = py_trees.composites.Sequence(name="Pick sequence", memory=False, children=[
-        retry_detect_object,
-        calculate_pick_position,
-        move_to_grasp,
-        grasp_and_recovery
-    ])
+    pick_sequence = Retry(name="Repty Pick sequence",
+                          child=py_trees.composites.Sequence(name="Pick sequence", memory=False, children=[
+                              retry_detect_object,
+                              calculate_pick_position,
+                              move_to_grasp,
+                              grasp_and_recovery
+                              ]), 
+                          num_failures=10)
     place_sequence = py_trees.composites.Sequence(name="Place sequence", memory=False, children=[
         calculate_place_position,
         move_to_place_with_monitor,
@@ -118,7 +120,6 @@ def run_tree(root, world_state, max_num_runs=1):
         True if the tree was successfully run, False on error.
     """
     # TODO: add your code here
-    py_trees.display.render_dot_tree(root, with_blackboard_variables=True)
 
     root.setup_with_descendants()
     while True:
