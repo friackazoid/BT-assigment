@@ -108,7 +108,7 @@ def create_pickup_tree(manipulator, object_detector, force_sensor,
     root.add_children([pick_sequence, place_sequence])
     return root
 
-def run_tree(root, world_state, max_num_runs=1):
+def run_tree(root, world_state, max_num_runs=1) -> bool:
     """
     Runs a behavior tree, trying max_num_runs times to re-run the same tree (without resetting
     the world state in-between).
@@ -119,22 +119,29 @@ def run_tree(root, world_state, max_num_runs=1):
     Returns:
         True if the tree was successfully run, False on error.
     """
-    # TODO: add your code here
 
-    root.setup_with_descendants()
-    while True:
+    def print_tree(behaviour_tree):
+        print(py_trees.display.unicode_tree(root=behaviour_tree.root, show_status=True))
+
+    behavior_tree = py_trees.trees.BehaviourTree(root)
+    behavior_tree.add_post_tick_handler(print_tree)
+    behavior_tree.setup(15)
+    while max_num_runs > 0:
         try:
-            print(f"\n-------- Tick {max_num_runs}------------ \n")
-            root.tick_once()
-            print(py_trees.display.unicode_tree(root, show_status=True))
-            print(f"World state: {world_state}")
+            behavior_tree.tick()
             if root.status == py_trees.common.Status.SUCCESS:
                 print("Task completed successfully!")
-                break
-            time.sleep(1)
-            max_num_runs -= 1
+                return True
+            if root.status == py_trees.common.Status.FAILURE:
+                print("Task failed!")
+                max_num_runs -= 1
+
+            print(f"\n--------Attempt {max_num_runs}; Tick {behavior_tree.count}------------ \n")
+            time.sleep(0.5)
         except KeyboardInterrupt:
             root.interrupt()
             break
+
+    return False
 
 
