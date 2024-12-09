@@ -63,7 +63,7 @@ if __name__ == '__main__':
                         help="Probability for object to slip from gripper, [0.0..1.0]")
     parser.add_argument('--force-detect', type=float, default=0.8,
                         help="Force-feedback detection success probability, [0.0..1.0]")
-    parser.add_argument('--render_dot_tree', type=bool, default=True, help="Render the tree as a dot file")
+    parser.add_argument('--render_dot_tree', action='store_true', help="Render the tree as a dot file")
     args = parser.parse_args()
 
     # Run the behavior tree with the specified parameters
@@ -71,4 +71,5 @@ if __name__ == '__main__':
          move_success=args.move,
          grasp_success=args.grasp,
          slip_probability=args.slip,
-         force_detect_success=args.force_detect)
+         force_detect_success=args.force_detect,
+         render_dot_tree=args.render_dot_tree)
